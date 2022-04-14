@@ -2,17 +2,26 @@ fundamentus_validator <- function(stock) {
   
   url <- paste0("https://www.fundamentus.com.br/detalhes.php?papel=", stock)
   
-  html_page <- rvest::read_html(url)
-  
-  tables <- rvest::html_table(html_page)
+  tables <- rvest::read_html(url) |>
+    rvest::html_table()
   
   if (length(tables) == 5) {
     
-    return(TRUE)
+    vol_medio <- pull(tables[[1]][4][5, ]) |> 
+      str_replace_all("\\.", "") |>  
+      as.double()
     
+    if (vol_medio > 0) {
+    
+    return(1)
+    
+    } else {
+      
+      return(0)}
+  
   } else {
     
-    return(FALSE)
+    return(0)
   
   }
 }

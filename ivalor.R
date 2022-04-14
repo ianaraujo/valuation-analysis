@@ -2,30 +2,44 @@
 library(tidyverse)
 library(magrittr)
 library(rvest)
+library(DBI)
 
 source("R/fundamentus_validator.R")
 
-lista_urls <-
-  purrr::map_chr(1:28, function(.x) {
-    glue::glue("https://www.ivalor.com.br/empresas/listagem?p={.x}")
-  })
 
-data <- purrr::map_df(lista_urls, function(.x) read_html(.x) |> html_table())
+### EXTRACT ###
 
-data_stocks <- data %>% select("code" = 4) %$% 
+BASE_URL <- "https://www.ivalor.com.br/empresas/listagem?p="
+
+lista_urls <- purrr::map_chr(1:28, function(.x) paste0(BASE_URL, .x))
+
+data <- 
+  parallel::mclapply(lista_urls, function(x) html_table(read_html(x)), mc.cores = 12)
+
+
+### TRANSFORM ###
+
+df <- bind_rows(data)
+
+df_stocks <- df %>% select("code" = 4) %$% 
   str_replace_all(code, pattern = "\\s+", replacement = ".") %>%
   strsplit(split = ".", fixed = TRUE) %>%
   unlist()
   
-data_valid_stocks <- tibble(
-  stocks = data_stocks,
-  validation = map(data_stocks, fundamentus_validator)
+df_valid_stocks <- tibble(
+  stocks = df_stocks,
+  validation = parallel::mclapply(df_stocks, fundamentus_validator, mc.cores = 12)
 )
 
-stocks <- data_valid_stocks %>%
-  filter(validation == TRUE) %>%
+stocks <- df_valid_stocks %>%
+  filter(validation == 1) %>%
   pull(stocks)
 
-write_rds(stocks, file = "data/validb3stocks.rds")
 
-# 337.548 (5 minutes) sec elapsed 
+### LOAD ###
+
+conn <- dbConnect(RSQLite::SQLite(), "data/valuation.db")
+
+dbWriteTable(conn, "b3_stocks", tibble(code = stocks), overwrite = TRUE)
+
+dbDisconnect(conn)
