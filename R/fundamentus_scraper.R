@@ -1,4 +1,4 @@
-fundamentus <- function(url) {
+fundamentus_scraper <- function(url) {
   
   html_page <- rvest::read_html(url)
   
@@ -12,6 +12,8 @@ fundamentus <- function(url) {
     
     lista <- list(
       codigo = as.character(tables[[1]][2][1,]),
+      setor = as.character(tables[[1]][2][4,]),
+      subsetor = as.character(tables[[1]][2][5,]),
       preco = decimal(tables[[1]][4][1,]),
       volume = integer(tables[[1]][4][5,]),
       valor_mercado = integer(tables[[2]][2][1,]),
@@ -25,9 +27,12 @@ fundamentus <- function(url) {
   } else {
     
     lista <- list(
-      codigo = str_remove(string = url, pattern = "..*?papel="), preco = NA)
+      codigo = str_remove(string = url, pattern = "..*?papel="), 
+      preco = NA
+    )
     
     return(lista)
     
   }
 }
+
