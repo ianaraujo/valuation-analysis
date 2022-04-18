@@ -4,4 +4,4 @@ ETL process designed to obtain fundamentalis indicators of stocks brazilian list
 
 # TO-DO List
 
-[] - Handle negative values inside transfomation functions
+[ ] - Handle negative values inside transfomation functions
